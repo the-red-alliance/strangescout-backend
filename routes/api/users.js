@@ -108,6 +108,23 @@ router.get('/session', auth.required, (req, res) => {
 	});
 });
 
+//GET users (required, only authenticated users have access)
+router.get('/', auth.required, (req, res) => {
+	// load user var after being decoded by auth
+	const user = req.payload;
+	const { admin } = user;
+
+	if (!admin) return res.status(403).send('not authorized');
+
+	// check users collection for a user by the id in the token
+	return users.find((err, docs) => {
+		if (err) return res.status(500).send(err);
+		if(!docs || docs.length < 1) return res.status(404).send('No users found');
+		// return a token for the user
+		return res.json(docs);
+	});
+});
+
 // ----------------------------------------------------------------------------
 
 module.exports = router;

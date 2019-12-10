@@ -20,7 +20,7 @@ router.post('/', auth.required, (req, res) => {
 			"invite": false,
 			"single": false,
 			"email": "email@email.email",
-			"expires": dateobj
+			"duration": 6 // code duration in hours
 		}
 	*/
 
@@ -28,16 +28,18 @@ router.post('/', auth.required, (req, res) => {
 
 	// error if the email is invalid
 	if (codeReq.email && !emailValidator.validate(codeReq.email)) return res.status(422).send('invalid email');
-	if (codeReq.expires && ( !(codeReq.expires instanceof Date) || codeReq.expires < Date.now() )) return res.status(422).send('invalid expiration');
+	if (codeReq.duration && typeof codeReq.duration !== 'number') return res.status(422).send('invalid duration');
+
+	const expires = new Date();
+	if (codeReq.duration) expires.setHours( expires.getHours() + codeReq.duration );
 
 	let newCode = {
+		admin: (codeReq.admin && user.admin) ? true : false,
 		invite: codeReq.invite ? codeReq.invite : false,
 		single: codeReq.single ? codeReq.single : false,
 		email: codeReq.email ? codeReq.email : undefined,
-		expires: codeReq.expires ? codeReq.expires : undefined
+		expires: codeReq.duration ? expires : undefined
 	};
-
-	if (codeReq.admin && user.admin) newCode.admin = true;
 
 	const finalCode = new codes(newCode);
 	finalCode.generate();
