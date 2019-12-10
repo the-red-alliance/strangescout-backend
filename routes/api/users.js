@@ -32,14 +32,18 @@ router.post('/', auth.optional, (req, res) => {
 		// does a code exist?
 		codes.findOne({code: user.code}, (err, codeDoc) => {
 			if (err) return res.status(500).send(err);
+
+			// does our email match the code doc?
+			if (!codeDoc || (codeDoc.email && codeDoc.email !== user.email)) return res.status(422).send('invalid code');
+
 			// is the code still valid?
 			if (codeDoc.expires && codeDoc.expires < Date.now()) {
 				// delete if expired
-				codes.findByIdAndDelete(codeDoc._id);
+				codes.findByIdAndDelete(codeDoc._id, (err) => {
+					if (err) console.error(err);
+				});
 				return res.status(422).send('expired code');
 			}
-			// does our email match the code doc?
-			if (!codeDoc || (codeDoc.email && codeDoc.email !== user.email)) return res.status(422).send('invalid code');
 
 			const finalUser = new users({email: user.email, admin: codeDoc.admin, invite: codeDoc.invite});
 			finalUser.setPassword(user.password);
@@ -48,7 +52,9 @@ router.post('/', auth.optional, (req, res) => {
 				if (err) return res.status(500).send(err);
 				// if this was a single use code, delete it
 				if (codeDoc.single) {
-					codes.findByIdAndDelete(codeDoc._id);
+					codes.findByIdAndDelete(codeDoc._id, (err) => {
+						if (err) console.error(err);
+					});
 				}
 				return res.status(200).json(doc.toAuthJSON());
 			});
