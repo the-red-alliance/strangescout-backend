@@ -48,7 +48,7 @@ db.once('open', function() {
 	app.use(require('./routes'));
 
 	// route / to static frontend files
-	//app.use('/', express.static(config.staticPath))
+	app.use('/', express.static(process.env.STATIC))
 
 	// listen
 	app.listen(process.env.PORT, () => {

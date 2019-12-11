@@ -24,26 +24,31 @@ router.post('/', auth.optional, (req, res) => {
 	// error if code is not 8 digits or not alphanumeric
 	if (!(/^[0-9A-Za-z]{8}$/g.test(user.code))) return res.status(422).send('invalid code');
 
-	// error if an account already exists under the specified username
-	users.exists({ email: user.email }, (err, exists) => {
+	
+
+	// does a code exist?
+	codes.findOne({code: user.code}, (err, codeDoc) => {
 		if (err) return res.status(500).send(err);
-		if (exists) return res.status(409).send('Account exists');
 
-		// does a code exist?
-		codes.findOne({code: user.code}, (err, codeDoc) => {
+		// does ther code exist?
+		if (!codeDoc) return res.status(422).send('invalid code');
+
+		// does our email match the code doc?
+		if (codeDoc.email && codeDoc.email !== user.email) return res.status(403).send('code not useable by this account');
+
+		// is the code still valid?
+		if (codeDoc.expires && codeDoc.expires < Date.now()) {
+			// delete if expired
+			codes.findByIdAndDelete(codeDoc._id, (err) => {
+				if (err) console.error(err);
+			});
+			return res.status(440).send('expired code');
+		}
+
+		// error if an account already exists under the specified username
+		users.exists({ email: user.email }, (err, exists) => {
 			if (err) return res.status(500).send(err);
-
-			// does our email match the code doc?
-			if (!codeDoc || (codeDoc.email && codeDoc.email !== user.email)) return res.status(422).send('invalid code');
-
-			// is the code still valid?
-			if (codeDoc.expires && codeDoc.expires < Date.now()) {
-				// delete if expired
-				codes.findByIdAndDelete(codeDoc._id, (err) => {
-					if (err) console.error(err);
-				});
-				return res.status(422).send('expired code');
-			}
+			if (exists) return res.status(409).send('Account exists');
 
 			const finalUser = new users({email: user.email, admin: codeDoc.admin, invite: codeDoc.invite});
 			finalUser.setPassword(user.password);
