@@ -24,8 +24,6 @@ router.post('/', auth.optional, (req, res) => {
 	// error if code is not 8 digits or not alphanumeric
 	if (!(/^[0-9A-Za-z]{8}$/g.test(user.code))) return res.status(422).send('invalid code');
 
-	
-
 	// does a code exist?
 	codes.findOne({code: user.code}, (err, codeDoc) => {
 		if (err) return res.status(500).send(err);
@@ -66,6 +64,25 @@ router.post('/', auth.optional, (req, res) => {
 		});
 	});
 });
+
+//GET users (required, only authenticated users have access)
+router.get('/', auth.required, (req, res) => {
+	// load user var after being decoded by auth
+	const user = req.payload;
+	const { admin } = user;
+
+	// only admins can read this
+	if (!admin) return res.status(403).send('not authorized');
+
+	// check users collection for a user by the id in the token
+	return users.find((err, docs) => {
+		if (err) return res.status(500).send(err);
+		if(!docs || docs.length < 1) return res.status(404).send('No users found');
+		// return a token for the user
+		return res.json(docs);
+	});
+});
+
 
 // ----------------------------------------------------------------------------
 
@@ -119,20 +136,36 @@ router.get('/session', auth.required, (req, res) => {
 	});
 });
 
-//GET users (required, only authenticated users have access)
-router.get('/', auth.required, (req, res) => {
+
+// ----------------------------------------------------------------------------
+
+
+// /users/:id/password ---------------------------------------------------------------------
+
+// PUT new password
+
+router.put('/:id/password', auth.required, (req, res) => {
+	// load id to modify
+	const id = req.params.id;
 	// load user var after being decoded by auth
 	const user = req.payload;
-	const { admin } = user;
+	// load request body (new password)
+	const { password } = req.body;
 
-	if (!admin) return res.status(403).send('not authorized');
+	// fail if you're not that user or an admin
+	if (id !== user._id && !user.admin) return res.status(403).send('Forbidden');
 
-	// check users collection for a user by the id in the token
-	return users.find((err, docs) => {
+	// error if an account already exists under the specified username
+	users.findById(id, (err, doc) => {
 		if (err) return res.status(500).send(err);
-		if(!docs || docs.length < 1) return res.status(404).send('No users found');
-		// return a token for the user
-		return res.json(docs);
+		if (!doc) return res.status(404).send('Account not found!');
+
+		if (!password) return res.status(422).send('password required');
+		if (typeof password !== 'string') return res.status(422).send('invalid password');
+
+		
+		doc.setPassword(password);
+		return doc.save().then(() => res.status(202).send('updated'));
 	});
 });
 
