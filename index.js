@@ -30,6 +30,7 @@ db.once('open', function() {
 	// load users model
 	require('./models/UserModel');
 	require('./models/InviteCodeModel');
+	require('./models/RunModel');
 	// load passport
 	require('./utils/passport');
 
