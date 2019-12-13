@@ -14,19 +14,30 @@ module.exports = (email, password) => new Promise((resolve, reject) => {
 	// error if the email is invalid
 	if (!emailValidator.validate(email)) reject('email invalid');
 
-	// error if an account already exists under the specified username
-	users.exists({ email: email }, (err, exists) => {
+	console.log('searching for default admin...');
+	users.findOne({ defaultAdmin: true }, (err, doc) => {
 		if (err) reject(err);
-		if (exists) reject('admin exists');
 
-		const finalUser = new users({email: email, admin: true, invite: true});
-		finalUser.setPassword(password);
+		let newUser = {email: email, admin: true, invite: true, defaultAdmin: true};
 
-		return finalUser.save(null, (err) => {
-			if (err) reject(err);
+		if (doc) {
+			console.log('updating default admin...');
+			doc.overwrite(newUser);
+			doc.setPassword(password);
+			return doc.save(null, (err) => {
+				if (err) reject(err);
+				resolve();
+			});
+		} else {
+			console.log('creating default admin...');
+			const finalUser = new users(newUser);
+			finalUser.setPassword(password);
 
-			resolve();
-		});
+			return finalUser.save(null, (err) => {
+				if (err) reject(err);
+				resolve();
+			});
+		}
 	});
 });
 

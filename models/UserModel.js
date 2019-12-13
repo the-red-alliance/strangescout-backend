@@ -14,6 +14,7 @@ const UserSchema = new Schema({
 	// pass hash and salt
 	hash: { type: String, required: true },
 	salt: { type: String, required: true },
+	defaultAdmin: { type: Boolean }
 });
 
 UserSchema.methods.setPassword = function(password) {

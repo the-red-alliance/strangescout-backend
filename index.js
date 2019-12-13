@@ -34,7 +34,7 @@ db.once('open', function() {
 	require('./utils/passport');
 
 	createAdmin(process.env.ADMINEMAIL, process.env.ADMINPASSWORD).then(() => {
-		console.log('admin account created');
+		console.log('admin done!');
 	}, (err) => {
 		if (typeof err === 'string') {
 			console.log(err);
