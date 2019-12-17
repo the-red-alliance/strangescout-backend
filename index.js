@@ -32,6 +32,7 @@ db.once('open', function() {
 	require('./models/InviteCodeModel');
 	require('./models/RunModel');
 	require('./models/TemplateModel');
+	require('./models/ProcessedTeamModel');
 	// load passport
 	require('./utils/passport');
 
