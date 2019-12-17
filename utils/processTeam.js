@@ -34,14 +34,45 @@ module.exports.updateTeam = (team) => {
 						matchingTopEvents[0].children.forEach((child) => {
 							let filteredJournal = totalJournal.filter(journalEvent => (journalEvent.event === child.key));
 							
-							if (!dataObj[child.key]) dataObj[child.key] = {};
-							dataObj[child.key].average_children = filteredJournal.length / runDocs.length;
+							if (filteredJournal.length > 0) {
+								if (!dataObj[child.key]) dataObj[child.key] = {};
+								dataObj[child.key].average_children = filteredJournal.length / runDocs.length;
+							}
 						});
 					} else {
 						return console.warn('more than one top event found with event key ' + processingObject.key + '!');
 					}
+
+				} else if (processingObject.type === 'average_duration_children') {
+					let matchingTopEvents = templateDoc.scout.run.filter(event => (event.key === processingObject.event));
+
+					if (matchingTopEvents.length === 1) {
+						matchingTopEvents[0].children.forEach((child) => {
+							let indexes = [];
+							
+							totalJournal.forEach((value, index) => {
+								if (value.event === child.key) {
+									indexes.push(index);
+								}
+							});
+
+							let totalTime = 0;
+
+							indexes.forEach(indexValue => {
+								totalTime = totalTime + ( totalJournal[indexValue].time - totalJournal[indexValue-1].time );
+							});
+							
+							if (indexes.length > 0) {
+								if (!dataObj[child.key]) dataObj[child.key] = {};
+								dataObj[child.key].average_duration_children = totalTime / indexes.length;
+							}
+						});
+					} else {
+						return console.warn('more than one top event found with event key ' + processingObject.key + '!');
+					}
+
 				} else {
-					console.log(processingObject.type + ' isn\'t a valid processing type!');
+					console.warn(processingObject.type + ' isn\'t a valid processing type!');
 				}
 			});
 
