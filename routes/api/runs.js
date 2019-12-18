@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 const router = require('express').Router();
 const auth = require('../../middlewares/auth');
 const runs = mongoose.model('runs');
+const processTeam = require('../../utils/processTeam');
 
 // /codes ---------------------------------------------------------------------
 
@@ -30,13 +31,15 @@ router.post('/', auth.required, (req, res) => {
 	return finalRun.save(null, (err, doc) => {
 		if (err) return res.status(500).send(err);
 
-		return res.status(200).json(doc);
+		processTeam.updateTeam(doc.team);
+
+		return res.status(202);
 	});
 });
 
 router.get('/', auth.required, (req, res) => {
 	let updatedDate;
-	const updated = req.param('updated');
+	const updated = req.params.updated;
 	if (updated) updatedDate = new Date(JSON.parse(updated));
 
 	const callback = (err, docs) => {

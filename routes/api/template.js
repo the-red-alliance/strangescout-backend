@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const router = require('express').Router();
 const auth = require('../../middlewares/auth');
+const processTeam = require('../../utils/processTeam');
 const templates = mongoose.model('templates');
 
 // /template ---------------------------------------------------------------------
@@ -21,6 +22,7 @@ router.post('/', auth.required, (req, res) => {
 		}
 
 		finalTemplate.setActive().then((finalDoc) => {
+			processTeam.updateAllTeams();
 			return res.status(200).json(finalDoc);
 		}, e => {
 			console.error('error setting active template', e);

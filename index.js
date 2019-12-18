@@ -57,4 +57,6 @@ db.once('open', function() {
 	app.listen(process.env.PORT, () => {
 		console.log(`listening on :${process.env.PORT}...`);
 	});
+
+	require('./utils/processTeam').updateAllTeams();
 });
