@@ -9,5 +9,6 @@ router.use('/users', require('./users'));
 router.use('/codes', require('./codes'));
 router.use('/template', require('./template'));
 router.use('/runs', require('./runs'));
+router.use('/processedTeams', require('./processedTeams'));
 
 module.exports = router;

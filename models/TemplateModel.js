@@ -24,13 +24,28 @@ const ChildEventSchema = new Schema({
 });
 
 const RunEventSchema = new Schema({
+	// can be 'duration' or 'item'
+	// 'duration' is a start/stop duration tracker
+	// 'item' is a get/place action
+	type: { type: String, required: true },
+	// button display text
 	display: { type: String, required: true },
+	// secondary button display text for a duration event
+	endDisplay: { type: String },
+	// elapsed time for event to become active
 	activeTime: { type: Number, required: true, default: 0 },
+	// should the event disable at the end of the match
 	endDisable: { type: Boolean, required: true, default: true },
+	// can the event be held (only matters for 'item' events)
 	canHold: { type: Boolean, required: true },
-	ignoreHold: { type: Boolean, required: true },
+	// can the event still happen if something is being held
+	ignoreHold: { type: Boolean, required: true, default: false },
+	// event key
 	key: { type: String, required: true },
-	children: { type: [ChildEventSchema], required: true },
+	// secondary key for end of a 'duration' type event
+	endKey: { type: String },
+	// sub events (only matters for 'item' events)
+	children: { type: [ChildEventSchema] },
 });
 
 const RunProcessSchema = new Schema({
