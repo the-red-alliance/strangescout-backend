@@ -13,7 +13,7 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 //Configure Mongoose
-mongoose.connect(process.env.DBURL + '/' + process.env.DBNAME, {
+mongoose.connect(process.env.DBURL, {
 	useNewUrlParser: true,
 	useFindAndModify: false,
 	useCreateIndex: true,
@@ -22,7 +22,7 @@ mongoose.connect(process.env.DBURL + '/' + process.env.DBNAME, {
 mongoose.set('debug', Boolean(process.env.MONGOOSEDEBUG)); 
 
 // begin db connection
-console.log('connecting to database `' + process.env.DBNAME + '` at ' + process.env.DBURL);
+console.log('connecting to database `' + process.env.DBURL + '`');
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
