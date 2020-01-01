@@ -3,11 +3,17 @@ const mongoose = require('mongoose');
 const { Schema } = mongoose;
 
 const InviteCodeSchema = new Schema({
+	// code value
 	code: { type: String, required: true },
+	// will created users be admin
 	admin: { type: Boolean, required: true, default: false },
+	// will created users be able to invite other users
 	invite: { type: Boolean, required: true, default: false },
+	// is the token single use
 	single: { type: Boolean, required: true, default: false },
+	// is there a specific email only available to use the token
 	email: { type: String, required: false },
+	// does the token expire
 	expires: { type: Date, required: false },
 });
 
@@ -18,7 +24,7 @@ InviteCodeSchema.methods.generate = function() {
 	// initialize new code
 	let newCode = '';
 
-	// possible characters for code (case-sensetive alphanumeric)
+	// possible characters for code (case-sensitive alphanumeric)
 	const chars = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
 	// loop
 	do {

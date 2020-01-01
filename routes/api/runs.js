@@ -12,7 +12,7 @@ router.post('/', auth.required, (req, res) => {
 	const user = req.payload;
 	// load doc from body
 	let newRun = { ...req.body };
-	// set scouter from authed user
+	// set scouter from authenticated user
 	newRun.scouter = user.email;
 
 	if (!newRun.team) return res.status(422).send('`team` is required');

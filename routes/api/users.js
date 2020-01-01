@@ -28,7 +28,7 @@ router.post('/', auth.optional, (req, res) => {
 	codes.findOne({code: user.code}, (err, codeDoc) => {
 		if (err) return res.status(500).send(err);
 
-		// does ther code exist?
+		// does the code exist?
 		if (!codeDoc) return res.status(422).send('invalid code');
 
 		// does our email match the code doc?

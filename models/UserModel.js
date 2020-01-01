@@ -14,14 +14,17 @@ const UserSchema = new Schema({
 	// pass hash and salt
 	hash: { type: String, required: true },
 	salt: { type: String, required: true },
+	// is this the default admin (do not touch)
 	defaultAdmin: { type: Boolean }
 });
 
+// generates and stores a salt, then hashes the password accordingly
 UserSchema.methods.setPassword = function(password) {
 	this.salt = crypto.randomBytes(16).toString('hex');
 	this.hash = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex');
 };
 
+// reads the stored salt, hashes a password, then compares it to the stored hash
 UserSchema.methods.validatePassword = function(password) {
 	const hash = crypto.pbkdf2Sync(password, this.salt, 10000, 512, 'sha512').toString('hex');
 	return this.hash === hash;

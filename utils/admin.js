@@ -14,14 +14,19 @@ module.exports = (email, password) => new Promise((resolve, reject) => {
 	// error if the email is invalid
 	if (!emailValidator.validate(email)) reject('email invalid');
 
+	// attempt to find an existing default admin doc
 	console.log('searching for default admin...');
 	users.findOne({ defaultAdmin: true }, (err, doc) => {
+		// fail on a db error
 		if (err) reject(err);
 
+		// setup our new admin doc
 		let newUser = {email: email, admin: true, invite: true, defaultAdmin: true};
 
+		// if we found an existing doc
 		if (doc) {
 			console.log('updating default admin...');
+			// overwrite the old doc and save it
 			doc.overwrite(newUser);
 			doc.setPassword(password);
 			return doc.save(null, (err) => {
@@ -29,6 +34,7 @@ module.exports = (email, password) => new Promise((resolve, reject) => {
 				resolve();
 			});
 		} else {
+			// else create a new doc
 			console.log('creating default admin...');
 			const finalUser = new users(newUser);
 			finalUser.setPassword(password);

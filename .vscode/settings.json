@@ -1,4 +1,13 @@
 {
 	"editor.insertSpaces": false,
-	"editor.renderWhitespace": "boundary"
+	"editor.renderWhitespace": "boundary",
+	"cSpell.words": [
+		"caserver",
+		"certificatesresolvers",
+		"leresolver",
+		"loadouts"
+	],
+	"cSpell.ignoreWords": [
+		"authed"
+	]
 }

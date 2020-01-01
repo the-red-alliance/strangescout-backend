@@ -27,7 +27,7 @@ const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
 db.once('open', function() {
 	console.log('connected!');
-	// load users model
+	// load models
 	require('./models/UserModel');
 	require('./models/InviteCodeModel');
 	require('./models/RunModel');
@@ -36,6 +36,7 @@ db.once('open', function() {
 	// load passport
 	require('./utils/passport');
 
+	// attempt to create or update the configured default admin account
 	createAdmin(process.env.ADMINEMAIL, process.env.ADMINPASSWORD).then(() => {
 		console.log('admin done!');
 	}, (err) => {
@@ -53,10 +54,11 @@ db.once('open', function() {
 	// route / to static frontend files
 	app.use('/', express.static(process.env.STATIC))
 
-	// listen
+	// listen on the specified port
 	app.listen(process.env.PORT, () => {
 		console.log(`listening on :${process.env.PORT}...`);
 	});
-
+	
+	// update all teams processing on launch
 	require('./utils/processTeam').updateAllTeams();
 });

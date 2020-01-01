@@ -9,9 +9,8 @@ const emailValidator = require('email-validator');
 
 //POST code route
 router.post('/', auth.required, (req, res) => {
-	// load user var after being decoded by auth
+	// load user and code vars after being decoded by auth
 	const user = req.payload;
-
 	const codeReq = req.body;
 
 	/*
@@ -24,15 +23,20 @@ router.post('/', auth.required, (req, res) => {
 		}
 	*/
 
+	// if the user isn't able to invite users fail
 	if (!user.invite) return res.status(403).send('User does not have permission to invite new users');
 
-	// error if the email is invalid
+	// if an email is given error if the email is invalid
 	if (codeReq.email && !emailValidator.validate(codeReq.email)) return res.status(422).send('invalid email');
+	// if a duration is given error if the duration isn't a number
 	if (codeReq.duration && typeof codeReq.duration !== 'number') return res.status(422).send('invalid duration');
 
+	// set the expiration date
 	const expires = new Date();
+	// if a duration is passed set the expires data object by hours to the current expires hours plus the passed duration
 	if (codeReq.duration) expires.setHours( expires.getHours() + codeReq.duration );
 
+	// create the new code doc
 	let newCode = {
 		admin: (codeReq.admin && user.admin) ? true : false,
 		invite: codeReq.invite ? codeReq.invite : false,
@@ -40,10 +44,11 @@ router.post('/', auth.required, (req, res) => {
 		email: codeReq.email ? codeReq.email : undefined,
 		expires: codeReq.duration ? expires : undefined
 	};
-
 	const finalCode = new codes(newCode);
+	// generate the actual code
 	finalCode.generate();
 
+	// return the code after saving
 	return finalCode.save(null, (err, doc) => {
 		if (err) return res.status(500).send(err);
 
