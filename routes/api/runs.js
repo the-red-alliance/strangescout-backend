@@ -27,13 +27,13 @@ router.post('/', auth.required, (req, res) => {
 
 	const finalRun = new runs(newRun);
 	finalRun.setUpdated();
-
-	return finalRun.save(null, (err, doc) => {
+	
+	finalRun.save(null, (err, doc) => {
 		if (err) return res.status(500).send(err);
-
+		
 		processTeam.updateTeam(doc.team);
 
-		return res.status(202);
+		return res.status(202).send();
 	});
 });
 

@@ -3,6 +3,8 @@ const runs = mongoose.model('runs');
 const templates = mongoose.model('templates');
 const processedTeams = mongoose.model('processedTeams');
 
+const bestFit = require('./bestFit');
+
 /**
  * Processes all runs for a specific team according to the active game template's processing model
  * @param {number} team team to process run data
@@ -27,7 +29,7 @@ module.exports.updateTeam = (team) => {
 			}
 
 			// find all runs for the specified team
-			runs.find({team: team}, (runsError, runDocs) => {
+			runs.find({team: team}, null, {sort: {match: 1}}, (runsError, runDocs) => {
 				// fail if there was an error finding runs for the team
 				if (runsError) {
 					reject(runsError);
@@ -73,6 +75,13 @@ module.exports.updateTeam = (team) => {
 									// set to the average occurrences per match
 									// dataObj.<topEventKey>.<childEventKey>.average = #
 									dataObj[matchingTopEvents[0].key][child.key].average = filteredJournal.length / runDocs.length;
+
+									let xypoints = [];
+									runDocs.forEach((value, index) => {
+										let count = value.journal.filter(journalEvent => (journalEvent.event === child.key)).length;
+										xypoints.push({x: index + 1, y: count});
+									});
+									dataObj[matchingTopEvents[0].key][child.key].average_bestfit = bestFit(xypoints);
 								}
 							});
 						// if there is more than one top level event with the key ignore the processing object
@@ -130,6 +139,33 @@ module.exports.updateTeam = (team) => {
 									// indexes array essentially tracks the number of occurrences, so we can use it for math
 									// dataObj.<topEventKey>.<childEventKey>.average_duration = #
 									dataObj[matchingTopEvents[0].key][child.key].average_duration = totalTime / indexes.length;
+
+									let xypoints = [];
+									runDocs.forEach((value, index) => {
+										// empty indexes array for tracking
+										let runIndexes = [];
+
+										// for each journal event
+										value.journal.forEach((value, journalIndex) => {
+											// if the journal event matches the current child we're tracking
+											if (value.event === child.key) {
+												// push it's index to our indexes array
+												runIndexes.push(journalIndex);
+											}
+										});
+									
+										// initialize total time counter
+										let runTotalTime = 0;
+									
+										// for each tracked index (each occurrence)
+										runIndexes.forEach(indexValue => {
+											// the difference in timestamp between our tracked child and the event before it (the start/get event)
+											// is added to the total time counter
+											runTotalTime = runTotalTime + ( value.journal[indexValue].time - value.journal[indexValue-1].time );
+										});
+										xypoints.push({x: index + 1, y: runTotalTime / runIndexes.length});
+									});
+									dataObj[matchingTopEvents[0].key][child.key].average_duration_bestfit = bestFit(xypoints);
 								}
 							});
 						// if there is more than one top level event with the key ignore the processing object
