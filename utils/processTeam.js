@@ -48,13 +48,13 @@ module.exports.updateTeam = (team) => {
 					duration_total_duration: false,
 				};
 
-				if (gameElement.type === 'single_iem') processTypes = {
+				if (gameElement.type === 'single_item') processTypes = {
 					...processTypes,
 					average_children: true,
 					single_item_average_children_duration: true,
 				};
 
-				if (gameElement.type === 'multi_iem') processTypes = {
+				if (gameElement.type === 'multi_item') processTypes = {
 					...processTypes,
 					average_children: true,
 					multi_item_average_children_duration: true,
