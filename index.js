@@ -1,15 +1,18 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-
 const createAdmin = require('./utils/admin');
 
 const loadModels = () => {
 	require('./models/UserModel');
 	require('./models/InviteCodeModel');
 	require('./models/RunModel');
+	require('./models/EventModel');
 	require('./models/ProcessedTeamModel');
 };
+
+// run key checks before start
+require('./utils/keyChecks')();
 
 // Configure mongoose's promise to global promise
 mongoose.promise = global.Promise;
@@ -67,4 +70,5 @@ db.once('open', () => {
 	
 	// update all teams processing on launch
 	require('./utils/processTeam').updateAllTeams();
+	require('./utils/events').getEvents();
 });

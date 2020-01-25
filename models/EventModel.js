@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
-
 const { Schema } = mongoose;
+const { DateTime } = require('luxon');
 
 const EventSchema = new Schema({
 	name: { type: String, required: true },
@@ -11,7 +11,8 @@ const EventSchema = new Schema({
 	country: { type: String },
 	district: { type: mongoose.Mixed },
 	startDate: { type: Date, required: true, index: true },
-	endDate: { type: Date, required: true }
+	endDate: { type: Date, required: true },
+	updated: { type: Date, required: true }
 });
 
 EventSchema.methods.setEvent = function(tbaEvent) {
@@ -20,12 +21,13 @@ EventSchema.methods.setEvent = function(tbaEvent) {
 	this.city = tbaEvent.city
 	this.country = tbaEvent.country
 	this.district = tbaEvent.district
-	this.endDate = tbaEvent.end_date
+	this.endDate = DateTime.fromISO(tbaEvent.end_date, {zone: tbaEvent.timezone})
 	this.eventCode = tbaEvent.event_code
 	this.key = tbaEvent.key
 	this.name = tbaEvent.name
-	this.startDate = tbaEvent.start_date
+	this.startDate = DateTime.fromISO(tbaEvent.start_date, {zone: tbaEvent.timezone})
 	this.year= tbaEvent.year
+	this.updated = Date.now();
 };
 
 module.exports = EventSchema;
