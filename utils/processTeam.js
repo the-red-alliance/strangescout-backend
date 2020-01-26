@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const runs = mongoose.model('runs');
 const processedTeams = mongoose.model('processedTeams');
-const template = require('../utils/template');
+const template = require('./template');
 
 const bestFit = require('./bestFit');
 
@@ -26,7 +26,7 @@ module.exports.updateTeam = (team) => {
 			}
 			// fail if we succeed but there are no stored runs
 			if (runDocs.length < 1) {
-				reject('no runs found')
+				reject('no runs found');
 				return console.log('found 0 runs for team ' + team + ' - nothing to do...');
 			}
 
@@ -158,6 +158,42 @@ module.exports.updateTeam = (team) => {
 							});
 							dataObj[gameElement.key][child.key].average_duration_bestfit = bestFit(xypoints);
 						}
+					});
+				}
+
+				if (processTypes.multi_item_average_children_duration) {
+					// filter down the total journal to the current top and child events
+					// ensures we don't get tripped up by "misplaced" events, say, if the item was held
+					const childrenKeys = gameElement.children.map(value => value.key);
+					let filteredTotalJournal = totalJournal.filter(journalItem => (childrenKeys.includes(journalItem.event)) || (journalItem.event === gameElement.get.key));
+
+					let counters = {};
+
+					gameElement.children.forEach(child => {
+						if (!dataObj[gameElement.key]) dataObj[gameElement.key] = {};
+						if (!dataObj[gameElement.key][child.key]) dataObj[gameElement.key][child.key] = {};
+						counters[child.key] = {
+							elapsed: 0,
+							total: 0
+						};
+					});
+					
+					while (filteredTotalJournal.length > 0) {
+						const getIndex = filteredTotalJournal.findIndex(element => element.event === gameElement.get.key);
+						const childIndex = filteredTotalJournal.findIndex(element => childrenKeys.includes(element.event));
+
+						if (childIndex !== -1 && getIndex !== -1) {
+							const elapsed = filteredTotalJournal[childIndex].time - filteredTotalJournal[getIndex].time;
+							counters[filteredTotalJournal[childIndex].event].elapsed += elapsed;
+							counters[filteredTotalJournal[childIndex].event].total++;
+						}
+
+						if (childIndex !== -1) filteredTotalJournal.splice(childIndex, 1);
+						if (getIndex !== -1) filteredTotalJournal.splice(getIndex, 1);
+					}
+					
+					Object.keys(counters).forEach(counterKey => {
+						if (counters[counterKey].total > 0) dataObj[gameElement.key][counterKey].average_duration = counters[counterKey].elapsed / counters[counterKey].total;
 					});
 				}
 			});

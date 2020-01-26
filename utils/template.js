@@ -1,9 +1,11 @@
 const fs = require('fs');
 const YAML = require('yaml');
 
+let parsed = {};
+
 try {
 	let templateString = fs.readFileSync(process.env.TEMPLATE_PATH, 'utf8');
-	module.exports = YAML.parse(templateString);
+	parsed = YAML.parse(templateString);
 } catch (e) {
 	// error handling
 	if (e) {
@@ -13,3 +15,5 @@ try {
 		process.exit(1);
 	}
 }
+
+module.exports = parsed;

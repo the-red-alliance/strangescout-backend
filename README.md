@@ -8,3 +8,6 @@
 - `ADMINEMAIL`: Admin account email address
 - `ADMINPASSWORD`: Admin account password
 - `STATIC`: Directory of static site files
+- `TBA_KEY`: TBA API Key
+- `TBA_HMAC`: TBA HMAC hash
+- `TEMPLATE_PATH`: Template YAML file path

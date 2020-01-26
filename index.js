@@ -1,8 +1,18 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-
 const createAdmin = require('./utils/admin');
+
+const loadModels = () => {
+	require('./models/UserModel');
+	require('./models/InviteCodeModel');
+	require('./models/RunModel');
+	require('./models/EventModel');
+	require('./models/ProcessedTeamModel');
+};
+
+// run key checks before start
+require('./utils/keyChecks')();
 
 // Configure mongoose's promise to global promise
 mongoose.promise = global.Promise;
@@ -19,21 +29,21 @@ mongoose.connect(process.env.DBURL, {
 	useCreateIndex: true,
 	useUnifiedTopology: true,
 });
+
+// enable debug if the flag is set
 mongoose.set('debug', Boolean(process.env.MONGOOSEDEBUG)); 
 
 // begin db connection
 console.log('connecting to database `' + process.env.DBURL + '`');
 const db = mongoose.connection;
 db.on('error', console.error.bind(console, 'connection error:'));
-db.once('open', function() {
+db.once('open', () => {
 	console.log('connected!');
-	// load models
-	require('./models/UserModel');
-	require('./models/InviteCodeModel');
-	require('./models/RunModel');
-	require('./models/ProcessedTeamModel');
+
 	// load passport
 	require('./utils/passport');
+	// load models
+	loadModels();
 
 	// attempt to create or update the configured default admin account
 	createAdmin(process.env.ADMINEMAIL, process.env.ADMINPASSWORD).then(() => {
@@ -60,4 +70,5 @@ db.once('open', function() {
 	
 	// update all teams processing on launch
 	require('./utils/processTeam').updateAllTeams();
+	require('./utils/events').getEvents();
 });
