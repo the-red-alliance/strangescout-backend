@@ -12,5 +12,6 @@ router.use('/runs', require('./runs'));
 router.use('/processedTeams', require('./processedTeams'));
 router.use('/webhook', require('./tbaWebhook'));
 router.use('/events', require('./events'));
+router.use('/teams', require('./teams'));
 
 module.exports = router;
