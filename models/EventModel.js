@@ -12,6 +12,7 @@ const EventSchema = new Schema({
 	district: { type: mongoose.Mixed },
 	startDate: { type: Date, required: true, index: true },
 	endDate: { type: Date, required: true },
+	matches: { type: [], required: true, default: [] },
 	updated: { type: Date, required: true }
 });
 
@@ -27,6 +28,32 @@ EventSchema.methods.setEvent = function(tbaEvent) {
 	this.name = tbaEvent.name
 	this.startDate = DateTime.fromISO(tbaEvent.start_date, {zone: tbaEvent.timezone})
 	this.year= tbaEvent.year
+	this.updated = Date.now();
+};
+
+EventSchema.methods.setMatches = function(tbaMatches) {
+	let matches = tbaMatches.filter(match => match.comp_level === 'qm').map(match => {
+		return {
+			eventKey: match.event_key,
+			key: match.key,
+			match: match.match_number,
+			alliances: {
+				red: {
+					score: match.alliances.red.score,
+					teams: match.alliances.red.team_keys
+				},
+				blue: {
+					score: match.alliances.blue.score,
+					teams: match.alliances.blue.team_keys
+				},
+			},
+			winningAlliance: match.winning_alliance,
+			time: match.time,
+			predictedTime: match.predicted_time,
+			actualTime: match.actual_time,
+		}
+	}).sort((a,b) => a.match - b.match);
+	this.matches = matches;
 	this.updated = Date.now();
 };
 
