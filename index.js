@@ -9,6 +9,7 @@ const loadModels = () => {
 	require('./models/RunModel');
 	require('./models/EventModel');
 	require('./models/ProcessedTeamModel');
+	require('./models/PitModel');
 };
 
 // run key checks before start
