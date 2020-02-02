@@ -31,212 +31,228 @@ module.exports.updateTeam = (team) => {
 			}
 
 			// concat all journals together
-			let totalJournal = [];
-			runDocs.forEach(runDoc => totalJournal = [ ...totalJournal, ...runDoc.journal ]);
+			let fullJournal = [];
+			runDocs.forEach(runDoc => fullJournal = [ ...fullJournal, ...runDoc.journal ]);
 
-			// initialize processed data object
-			let dataObj = {};
+			// get distinct events for the team
+			const events = [...new Set(runDocs.map(el => el.event))];
 
-			// for each process object
-			// (forEach runs synchronously)
-			//templateDoc.process.run.forEach((processingObject) => {
-			template.scout.run.forEach((gameElement) => {
-				let processTypes = {
-					average_children: false,
-					single_item_average_children_duration: false,
-					multi_item_average_children_duration: false,
-					duration_total_duration: false,
-				};
+			events.forEach((event, i) => {
+				// initialize processed data object
+				let dataObj = {};
 
-				if (gameElement.type === 'single_item') processTypes = {
-					...processTypes,
-					average_children: true,
-					single_item_average_children_duration: true,
-				};
+				let totalJournal = [];
+				runDocs.filter(runDoc => runDoc.event === event).forEach(runDoc => totalJournal = [ ...totalJournal, ...runDoc.journal ]);
 
-				if (gameElement.type === 'multi_item') processTypes = {
-					...processTypes,
-					average_children: true,
-					multi_item_average_children_duration: true,
-				};
+				// for each process object
+				// (forEach runs synchronously)
+				//templateDoc.process.run.forEach((processingObject) => {
+				template.scout.run.forEach((gameElement) => {
+					let processTypes = {
+						average_children: false,
+						single_item_average_children_duration: false,
+						multi_item_average_children_duration: false,
+						duration_total_duration: false,
+					};
 
-				// take the average count per match for each child of the specified top level event
-				if (processTypes.average_children) {
-					// for each child of the top level event
-					gameElement.children.forEach((child) => {
-						// filter the journal down to only the current child event
-						let filteredJournal = totalJournal.filter(journalEvent => (journalEvent.event === child.key));
+					if (gameElement.type === 'single_item') processTypes = {
+						...processTypes,
+						average_children: true,
+						single_item_average_children_duration: true,
+					};
 
-						// if the journal isn't empty
-						// (meaning the child event has occurred)
-						if (filteredJournal.length > 0) {
-							// initialize the nested objects if they don't exist yet
-							// dataObj.<topEventKey>.<childEventKey> = {}
-							if (!dataObj[gameElement.key]) dataObj[gameElement.key] = {};
-							if (!dataObj[gameElement.key][child.key]) dataObj[gameElement.key][child.key] = {};
-							// set to the average occurrences per match
-							// dataObj.<topEventKey>.<childEventKey>.average = #
-							dataObj[gameElement.key][child.key].average = filteredJournal.length / runDocs.length;
+					if (gameElement.type === 'multi_item') processTypes = {
+						...processTypes,
+						average_children: true,
+						multi_item_average_children_duration: true,
+					};
 
-							let xypoints = [];
-							runDocs.forEach((value, index) => {
-								let count = value.journal.filter(journalEvent => (journalEvent.event === child.key)).length;
-								xypoints.push({x: index + 1, y: count});
-							});
-							dataObj[gameElement.key][child.key].average_bestfit = bestFit(xypoints);
-						}
-					});
-				}
-				
-				// take the average duration per occurrence for each child of the specified top level event
-				if (processTypes.single_item_average_children_duration) {
-					// filter down the total journal to the current top and child events
-					// ensures we don't get tripped up by "misplaced" events, say, if the item was held
-					const childrenKeys = gameElement.children.map(value => value.key);
-					const filteredTotalJournal = totalJournal.filter(journalItem => (childrenKeys.includes(journalItem.event)) || (journalItem.event === gameElement.key));
+					// take the average count per match for each child of the specified top level event
+					if (processTypes.average_children) {
+						// for each child of the top level event
+						gameElement.children.forEach((child) => {
+							// filter the journal down to only the current child event
+							let filteredJournal = totalJournal.filter(journalEvent => (journalEvent.event === child.key));
 
-					// for each child of the top level event
-					gameElement.children.forEach((child) => {
-						// empty indexes array for tracking
-						let indexes = [];
+							// if the journal isn't empty
+							// (meaning the child event has occurred)
+							if (filteredJournal.length > 0) {
+								// initialize the nested objects if they don't exist yet
+								// dataObj.<topEventKey>.<childEventKey> = {}
+								if (!dataObj[gameElement.key]) dataObj[gameElement.key] = {};
+								if (!dataObj[gameElement.key][child.key]) dataObj[gameElement.key][child.key] = {};
+								// set to the average occurrences per match
+								// dataObj.<topEventKey>.<childEventKey>.average = #
+								dataObj[gameElement.key][child.key].average = filteredJournal.length / runDocs.length;
 
-						// for each journal event
-						filteredTotalJournal.forEach((value, index) => {
-							// if the journal event matches the current child we're tracking
-							if (value.event === child.key) {
-								// push it's index to our indexes array
-								indexes.push(index);
+								let xypoints = [];
+								runDocs.forEach((value, index) => {
+									let count = value.journal.filter(journalEvent => (journalEvent.event === child.key)).length;
+									xypoints.push({x: index + 1, y: count});
+								});
+								dataObj[gameElement.key][child.key].average_bestfit = bestFit(xypoints);
 							}
 						});
+					}
 
-						// initialize total time counter
-						let totalTime = 0;
+					// take the average duration per occurrence for each child of the specified top level event
+					if (processTypes.single_item_average_children_duration) {
+						// filter down the total journal to the current top and child events
+						// ensures we don't get tripped up by "misplaced" events, say, if the item was held
+						const childrenKeys = gameElement.children.map(value => value.key);
+						const filteredTotalJournal = totalJournal.filter(journalItem => (childrenKeys.includes(journalItem.event)) || (journalItem.event === gameElement.key));
 
-						// for each tracked index (each occurrence)
-						indexes.forEach(indexValue => {
-							// the difference in timestamp between our tracked child and the event before it (the start/get event)
-							// is added to the total time counter
-							totalTime = totalTime + ( filteredTotalJournal[indexValue].time - filteredTotalJournal[indexValue-1].time );
-						});
+						// for each child of the top level event
+						gameElement.children.forEach((child) => {
+							// empty indexes array for tracking
+							let indexes = [];
 
-						// if the journal isn't empty
-						// (meaning the child event has occurred)
-						if (indexes.length > 0) {
-							// initialize the nested objects if they don't exist yet
-							// dataObj.<topEventKey>.<childEventKey> = {}
-							if (!dataObj[gameElement.key]) dataObj[gameElement.key] = {};
-							if (!dataObj[gameElement.key][child.key]) dataObj[gameElement.key][child.key] = {};
-							// set to the average duration per occurrence
-							// indexes array essentially tracks the number of occurrences, so we can use it for math
-							// dataObj.<topEventKey>.<childEventKey>.average_duration = #
-							dataObj[gameElement.key][child.key].average_duration = totalTime / indexes.length;
+							// for each journal event
+							filteredTotalJournal.forEach((value, index) => {
+								// if the journal event matches the current child we're tracking
+								if (value.event === child.key) {
+									// push it's index to our indexes array
+									indexes.push(index);
+								}
+							});
 
-							let xypoints = [];
-							runDocs.forEach((value, index) => {
-								// empty indexes array for tracking
-								let runIndexes = [];
+							// initialize total time counter
+							let totalTime = 0;
 
-								// for each journal event
-								value.journal.forEach((value, journalIndex) => {
-									// if the journal event matches the current child we're tracking
-									if (value.event === child.key) {
-										// push it's index to our indexes array
-										runIndexes.push(journalIndex);
+							// for each tracked index (each occurrence)
+							indexes.forEach(indexValue => {
+								// the difference in timestamp between our tracked child and the event before it (the start/get event)
+								// is added to the total time counter
+								totalTime = totalTime + ( filteredTotalJournal[indexValue].time - filteredTotalJournal[indexValue-1].time );
+							});
+
+							// if the journal isn't empty
+							// (meaning the child event has occurred)
+							if (indexes.length > 0) {
+								// initialize the nested objects if they don't exist yet
+								// dataObj.<topEventKey>.<childEventKey> = {}
+								if (!dataObj[gameElement.key]) dataObj[gameElement.key] = {};
+								if (!dataObj[gameElement.key][child.key]) dataObj[gameElement.key][child.key] = {};
+								// set to the average duration per occurrence
+								// indexes array essentially tracks the number of occurrences, so we can use it for math
+								// dataObj.<topEventKey>.<childEventKey>.average_duration = #
+								dataObj[gameElement.key][child.key].average_duration = totalTime / indexes.length;
+
+								let xypoints = [];
+								runDocs.forEach((value, index) => {
+									// empty indexes array for tracking
+									let runIndexes = [];
+
+									// for each journal event
+									value.journal.forEach((value, journalIndex) => {
+										// if the journal event matches the current child we're tracking
+										if (value.event === child.key) {
+											// push it's index to our indexes array
+											runIndexes.push(journalIndex);
+										}
+									});
+
+									// initialize total time counter
+									let runTotalTime = 0;
+
+									// for each tracked index (each occurrence)
+									runIndexes.forEach(indexValue => {
+										// the difference in timestamp between our tracked child and the event before it (the start/get event)
+										// is added to the total time counter
+										runTotalTime = runTotalTime + ( value.journal[indexValue].time - value.journal[indexValue-1].time );
+									});
+									if (runTotalTime / runIndexes.length) {
+										xypoints.push({x: index + 1, y: runTotalTime / runIndexes.length});
 									}
 								});
-
-								// initialize total time counter
-								let runTotalTime = 0;
-
-								// for each tracked index (each occurrence)
-								runIndexes.forEach(indexValue => {
-									// the difference in timestamp between our tracked child and the event before it (the start/get event)
-									// is added to the total time counter
-									runTotalTime = runTotalTime + ( value.journal[indexValue].time - value.journal[indexValue-1].time );
-								});
-								xypoints.push({x: index + 1, y: runTotalTime / runIndexes.length});
-							});
-							dataObj[gameElement.key][child.key].average_duration_bestfit = bestFit(xypoints);
-						}
-					});
-				}
-
-				if (processTypes.multi_item_average_children_duration) {
-					// filter down the total journal to the current top and child events
-					// ensures we don't get tripped up by "misplaced" events, say, if the item was held
-					const childrenKeys = gameElement.children.map(value => value.key);
-					let filteredTotalJournal = totalJournal.filter(journalItem => (childrenKeys.includes(journalItem.event)) || (journalItem.event === gameElement.get.key));
-
-					let counters = {};
-
-					gameElement.children.forEach(child => {
-						if (!dataObj[gameElement.key]) dataObj[gameElement.key] = {};
-						if (!dataObj[gameElement.key][child.key]) dataObj[gameElement.key][child.key] = {};
-						counters[child.key] = {
-							elapsed: 0,
-							total: 0
-						};
-					});
-					
-					while (filteredTotalJournal.length > 0) {
-						const getIndex = filteredTotalJournal.findIndex(element => element.event === gameElement.get.key);
-						const childIndex = filteredTotalJournal.findIndex(element => childrenKeys.includes(element.event));
-
-						if (childIndex !== -1 && getIndex !== -1) {
-							const elapsed = filteredTotalJournal[childIndex].time - filteredTotalJournal[getIndex].time;
-							counters[filteredTotalJournal[childIndex].event].elapsed += elapsed;
-							counters[filteredTotalJournal[childIndex].event].total++;
-						}
-
-						if (childIndex !== -1) filteredTotalJournal.splice(childIndex, 1);
-						if (getIndex !== -1) filteredTotalJournal.splice(getIndex, 1);
+								dataObj[gameElement.key][child.key].average_duration_bestfit = bestFit(xypoints);
+							}
+						});
 					}
-					
-					Object.keys(counters).forEach(counterKey => {
-						if (counters[counterKey].total > 0) dataObj[gameElement.key][counterKey].average_duration = counters[counterKey].elapsed / counters[counterKey].total;
-					});
-				}
-			});
 
-			// after processing is complete, attempt to find a preexisting processed doc for the team
-			processedTeams.findOne({ team: team }, (processedDocError, processedDoc) => {
-				// fail on an error
-				if (processedDocError) {
-					reject(processedDocError);
-					return console.error('failed to get team ' + team + '\'s processed data doc: ', processedDocError);
-				}
+					if (processTypes.multi_item_average_children_duration) {
+						// filter down the total journal to the current top and child events
+						// ensures we don't get tripped up by "misplaced" events, say, if the item was held
+						const childrenKeys = gameElement.children.map(value => value.key);
+						let filteredTotalJournal = totalJournal.filter(journalItem => (childrenKeys.includes(journalItem.event)) || (journalItem.event === gameElement.get.key));
 
-				// new doc body
-				// sets team, match count, and the new data object
-				let newDoc = new processedTeams({ team: team, matches: runDocs.length, data: dataObj });
+						let counters = {};
 
-				// if a processing doc exists already
-				if (processedDoc) {
-					// overwrite the old doc with our new doc
-					processedDoc.overwrite(newDoc);
-					// set timestamp and save
-					processedDoc.setUpdated();
-					processedDoc.save(null, (saveError) => {
-						if (saveError) {
-							reject(saveError);
-							return console.error('error saving doc!');
+						if (filteredTotalJournal.length > 0) {
+							gameElement.children.forEach(child => {
+								if (!dataObj[gameElement.key]) dataObj[gameElement.key] = {};
+								if (!dataObj[gameElement.key][child.key]) dataObj[gameElement.key][child.key] = {};
+								counters[child.key] = {
+									elapsed: 0,
+									total: 0
+								};
+							});
+
+							while (filteredTotalJournal.length > 0) {
+								const getIndex = filteredTotalJournal.findIndex(element => element.event === gameElement.get.key);
+								const childIndex = filteredTotalJournal.findIndex(element => childrenKeys.includes(element.event));
+							
+								if (childIndex !== -1 && getIndex !== -1) {
+									const elapsed = filteredTotalJournal[childIndex].time - filteredTotalJournal[getIndex].time;
+									counters[filteredTotalJournal[childIndex].event].elapsed += elapsed;
+									counters[filteredTotalJournal[childIndex].event].total++;
+								}
+							
+								if (childIndex !== -1) filteredTotalJournal.splice(childIndex, 1);
+								if (getIndex !== -1) filteredTotalJournal.splice(getIndex, 1);
+							}
+						
+							Object.keys(counters).forEach(counterKey => {
+								if (counters[counterKey].total > 0) dataObj[gameElement.key][counterKey].average_duration = counters[counterKey].elapsed / counters[counterKey].total;
+							});
 						}
-						console.log('Processed ' + runDocs.length + (runDocs.length === 1 ? ' run for team ' : ' runs for team ') + team + ' in ' + (Date.now() - startTime) + 'ms');
-						resolve();
-					});
-				} else {
-					// use our new doc
-					// set timestamp and save
-					newDoc.setUpdated();
-					newDoc.save(null, (saveError) => {
-						if (saveError) {
-							reject(saveError);
-							return console.error('error saving doc!');
-						}
-						console.log('Processed ' + runDocs.length + (runDocs.length === 1 ? ' run for team ' : ' runs for team ') + team + ' in ' + (Date.now() - startTime) + 'ms');
-						resolve();
-					});
-				}
+					}
+				});
+
+				// after processing is complete, attempt to find a preexisting processed doc for the team
+				processedTeams.findOne({ team: team, event: event }, (processedDocError, processedDoc) => {
+					// fail on an error
+					if (processedDocError) {
+						reject(processedDocError);
+						return console.error('failed to get team ' + team + '\'s processed data doc: ', processedDocError);
+					}
+
+					// new doc body
+					// sets team, match count, and the new data object
+					let newDoc = new processedTeams({ event: event, team: team, matches: runDocs.length, data: dataObj });
+
+					// if a processing doc exists already
+					if (processedDoc) {
+						// overwrite the old doc with our new doc
+						processedDoc.overwrite(newDoc);
+						// set timestamp and save
+						processedDoc.setUpdated();
+						processedDoc.save(null, (saveError) => {
+							if (saveError) {
+								reject(saveError);
+								return console.error('error saving doc!');
+							}
+							if (i > events.length - 2) {
+								console.log('Processed ' + runDocs.length + (runDocs.length === 1 ? ' run at ' : ' runs at ') + events.length + (events.length === 1 ? ' event for team ' : ' events for team ') + team + ' in ' + (Date.now() - startTime) + 'ms');
+								resolve();
+							}
+						});
+					} else {
+						// use our new doc
+						// set timestamp and save
+						newDoc.setUpdated();
+						newDoc.save(null, (saveError) => {
+							if (saveError) {
+								reject(saveError);
+								return console.error('error saving doc!');
+							}
+							if (i > events.length - 2) {
+								console.log('Processed ' + runDocs.length + (runDocs.length === 1 ? ' run at ' : ' runs at ') + events.length + (events.length === 1 ? ' event for team ' : ' events for team ') + team + ' in ' + (Date.now() - startTime) + 'ms');
+								resolve();
+							}
+						});
+					}
+				});
 			});
 		});
 	});
