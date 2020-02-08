@@ -10,7 +10,7 @@ router.put('/:teamNum', auth.required, (req, res) => {
 	// load doc from body
 	let newTeam = { ...req.body };
 
-	teams.findOne({team: req.params.teamNum}, (err, doc) => {
+	teams.findOne({team: req.params.teamNum, event: newTeam.event}, (err, doc) => {
 		const callback = (err, doc) => {
 			if (err) return res.status(500).send(err);
 			return res.status(200).json(doc);

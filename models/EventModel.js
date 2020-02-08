@@ -13,6 +13,7 @@ const EventSchema = new Schema({
 	startDate: { type: Date, required: true, index: true },
 	endDate: { type: Date, required: true },
 	matches: { type: [], required: true, default: [] },
+	teams: { type: [], required: true, default: [] },
 	updated: { type: Date, required: true }
 });
 
@@ -54,6 +55,12 @@ EventSchema.methods.setMatches = function(tbaMatches) {
 		}
 	}).sort((a,b) => a.match - b.match);
 	this.matches = matches;
+	this.updated = Date.now();
+};
+
+EventSchema.methods.setTeams = function(tbaTeams) {
+	let teams = tbaTeams.map(team => team.team_number).sort((a,b) => a - b);
+	this.teams = teams;
 	this.updated = Date.now();
 };
 
