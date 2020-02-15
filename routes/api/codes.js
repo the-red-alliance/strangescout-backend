@@ -41,7 +41,7 @@ router.post('/', auth.required, (req, res) => {
 		admin: (codeReq.admin && user.admin) ? true : false,
 		invite: codeReq.invite ? codeReq.invite : false,
 		single: codeReq.single ? codeReq.single : false,
-		email: codeReq.email ? codeReq.email : undefined,
+		email: codeReq.email ? codeReq.email.toLowerCase() : undefined,
 		expires: codeReq.duration ? expires : undefined
 	};
 	const finalCode = new codes(newCode);

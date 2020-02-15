@@ -32,7 +32,7 @@ router.post('/', auth.optional, (req, res) => {
 		if (!codeDoc) return res.status(422).send('invalid code');
 
 		// does our email match the code doc?
-		if (codeDoc.email && codeDoc.email !== user.email) return res.status(403).send('code not useable by this account');
+		if (codeDoc.email && codeDoc.email.toLowerCase() !== user.email.toLowerCase()) return res.status(403).send('code not useable by this account');
 
 		// is the code still valid?
 		if (codeDoc.expires && codeDoc.expires < Date.now()) {
@@ -44,11 +44,11 @@ router.post('/', auth.optional, (req, res) => {
 		}
 
 		// error if an account already exists under the specified username
-		users.exists({ email: user.email }, (err, exists) => {
+		users.exists({ email: user.email.toLowerCase() }, (err, exists) => {
 			if (err) return res.status(500).send(err);
 			if (exists) return res.status(409).send('Account exists');
 
-			const finalUser = new users({email: user.email, admin: codeDoc.admin, invite: codeDoc.invite});
+			const finalUser = new users({email: user.email.toLowerCase(), admin: codeDoc.admin, invite: codeDoc.invite});
 			finalUser.setPassword(user.password);
 
 			return finalUser.save(null, (err, doc) => {
@@ -98,7 +98,7 @@ router.post('/session', auth.optional, (req, res, next) => {
 	// error if a password isn't specified
 	if(!user.password) return res.status(422).send('password is required');
 	// error if the email is invalid
-	if (!emailValidator.validate(user.email)) return res.status(422).send('invalid email');
+	if (!emailValidator.validate(user.email.toLowerCase())) return res.status(422).send('invalid email');
 
 	return passport.authenticate('local', { session: true }, (err, passportUser, info) => {
 		if(err) return next(err);

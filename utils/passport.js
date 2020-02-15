@@ -13,7 +13,7 @@ passport.use(new LocalStrategy({
 	passwordField: 'password',
 }, (email, password, done) => {
 	// attempt to find a doc in the users table with the current email
-	users.findOne({ email })
+	users.findOne({ email: email.toLowerCase() })
 		.then((user) => {
 			// if we didn't find a matching user, fail
 			if(!user) return done(null, false, 'user not found');
