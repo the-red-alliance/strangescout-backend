@@ -12,7 +12,6 @@ const RunSchema = new Schema({
 	event: { type: String, required: true, index: true, default: 'N/A' },
 	team: { type: Number, required: true, index: true },
 	match: { type: Number, required: true, index: true },
-	position: { type: String, required: true },
 	journal: { type: [JournalEntrySchema], required: true },
 	notes: { type: String },
 	scouter: { type: String, index: true },

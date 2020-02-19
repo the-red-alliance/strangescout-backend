@@ -17,12 +17,10 @@ router.post('/', auth.required, (req, res) => {
 
 	if (!newRun.team) return res.status(422).send('`team` is required');
 	if (!newRun.match) return res.status(422).send('`match` is required');
-	if (!newRun.position) return res.status(422).send('`position` is required');
 	if (!newRun.journal) return res.status(422).send('`journal` is required');
 
 	if (typeof newRun.team !== 'number') return res.status(422).send('`team` must be a number');
 	if (typeof newRun.match !== 'number') return res.status(422).send('`match` must be a number');
-	if (typeof newRun.position !== 'string') return res.status(422).send('`position` must be a string');
 	if (!Array.isArray(newRun.journal)) return res.status(422).send('`journal` must be an array');
 
 	const finalRun = new runs(newRun);
