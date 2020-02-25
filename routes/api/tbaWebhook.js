@@ -2,6 +2,7 @@
 const router = require('express').Router();
 
 const eventsUtils = require('../../utils/events');
+const matchesUtils = require('../../utils/matches');
 
 router.get('/', (req, res) => {
 	console.log('Webhook GET: ', { headers: req.headers, body: req.body });
@@ -18,6 +19,9 @@ router.post('/', (req, res) => {
 	switch (req.body.message_type) {
 	case 'schedule_updated':
 		eventsUtils.getMatches(req.body.message_data.event_key);
+		break;
+	case 'match_score':
+		matchesUtils.getMatch(req.body.message_data.match.match_key);
 		break;
 	default:
 		return;

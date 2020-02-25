@@ -17,6 +17,9 @@ const EventSchema = new Schema({
 	updated: { type: Date, required: true }
 });
 
+/**
+ * Sets the document event from a TBA formatted event
+ */
 EventSchema.methods.setEvent = function(tbaEvent) {
 	// not the best way to do this but it works for now
 	// need to convert TBA snake case to camel case
@@ -31,36 +34,11 @@ EventSchema.methods.setEvent = function(tbaEvent) {
 	this.year= tbaEvent.year
 	this.updated = Date.now();
 };
-
-EventSchema.methods.setMatches = function(tbaMatches) {
-	let matches = tbaMatches.filter(match => match.comp_level === 'qm').map(match => {
-		return {
-			eventKey: match.event_key,
-			key: match.key,
-			match: match.match_number,
-			alliances: {
-				red: {
-					score: match.alliances.red.score,
-					teams: match.alliances.red.team_keys
-				},
-				blue: {
-					score: match.alliances.blue.score,
-					teams: match.alliances.blue.team_keys
-				},
-			},
-			winningAlliance: match.winning_alliance,
-			time: match.time,
-			predictedTime: match.predicted_time,
-			actualTime: match.actual_time,
-		}
-	}).sort((a,b) => a.match - b.match);
-	this.matches = matches;
-	this.updated = Date.now();
-};
-
-EventSchema.methods.setTeams = function(tbaTeams) {
-	let teams = tbaTeams.map(team => team.team_number).sort((a,b) => a - b);
-	this.teams = teams;
+/**
+ * Sets an array of team numbers to the event
+ */
+EventSchema.methods.setTeams = function(teams) {
+	this.teams = teams.sort((a,b) => a - b);
 	this.updated = Date.now();
 };
 

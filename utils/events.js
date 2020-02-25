@@ -1,161 +1,104 @@
+const https = require('https');
+const template = require('./template');
+
 const mongoose = require('mongoose');
 const events = mongoose.model('events');
-const template = require('./template');
-const https = require('https');
 
-module.exports.getEvents = function() {
+/**
+ * Get an array of team numbers for a specified event
+ * @param eventKey A string event key to get teams for
+ * @resolves An array of numbers
+ */
+module.exports.getTeams = (eventKey) => new Promise((resolve, reject) => {
 	if (!process.env.TBA_KEY) {
 		console.error('No TBA Key found!');
 		process.exit(1);
 	}
 
-	return new Promise((resolve, reject) => {
-		template.events.forEach(eventKey => {
-			let url = 'https://www.thebluealliance.com/api/v3/event/' + eventKey;
-	
-			events.findOne({ key: eventKey }, (err, doc) => {
-				if (err) {
-					reject(err);
-					console.error('Error finding event ', eventKey, err);
-				} else {
-					if (!doc) doc = new events({});
-	
-					https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
-						let body = '';
-	
-						res.setEncoding('utf8');
-						res.on('data', data => {
-							body += data;
-						});
-						res.on('end', () => {
-							body = JSON.parse(body);
-							doc.setEvent(body);
-							doc.save().then(() => {
-								this.getMatches(eventKey).then(() => {
-									this.getTeams(eventKey).then(() => {
-										resolve();
-									}, e => {
-										reject(e);
-										return console.error(e);
-									});
-								}, e => {
-									reject(e);
-									return console.error(e);
-								});
-							}, (e) => {
-								reject(e);
-								return console.error('Error saving event: ', eventKey, e);
-							});
-						});
-					});
-				}
-			});
+	let url = 'https://www.thebluealliance.com/api/v3/event/' + eventKey + '/teams/simple';
+
+	https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
+		let body = '';
+
+		res.setEncoding('utf8');
+		res.on('data', data => {
+			body += data;
+		});
+		res.on('end', () => {
+			try {
+				body = JSON.parse(body);
+				const teams = body.map(team => team.team_number).sort((a, b) => a - b);
+				resolve(teams);
+			} catch (e) {
+				console.error('ERROR: Error parsing teams ', eventKey, e);
+				reject(e);
+			}
 		});
 	});
-};
+});
 
-module.exports.getMatches = function(event) {
-	return new Promise((resolve, reject) => {
-		if (!process.env.TBA_KEY) {
-			console.error('No TBA Key found!');
-			process.exit(1);
-		}
-		
-		const callback = (eventKey, url) => {
-			events.findOne({ key: eventKey }, (err, doc) => {
-				if (err) {
-					reject(err);
-					return console.error('ERROR: Error finding event ', eventKey, err);
-				} else {
-					if (!doc) {
-						reject('ERROR: No event doc stored!: ', eventKey);
-						return console.error('ERROR: No event doc stored!: ', eventKey);
-					}
+/**
+ * Fetch and save an event's info from TBA
+ * (Event info + teams)
+ * @param eventKey A string event key to fetch and save from TBA
+ */
+module.exports.getEvent = (eventKey) => new Promise((resolve, reject) => {
+	if (!process.env.TBA_KEY) {
+		console.error('No TBA Key found!');
+		process.exit(1);
+	}
+
+	let url = 'https://www.thebluealliance.com/api/v3/event/' + eventKey;
 	
-					https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
-						let body = '';
-	
-						res.setEncoding('utf8');
-						res.on('data', data => {
-							body += data;
-						});
-						res.on('end', () => {
-							body = JSON.parse(body);
-							doc.setMatches(body);
-							doc.save(e => {
-								if (e) {
-									reject(e);
-									return console.error('ERROR: Error saving event ', eventKey, e);
-								}
-								resolve();
-							});
-						});
-					});
-				}
-			});
-		};
-	
-		if (event) {
-			let url = 'https://www.thebluealliance.com/api/v3/event/' + event + '/matches/simple';
-			callback(event, url);
+	// check if the event exists already
+	events.findOne({ key: eventKey }, (err, doc) => {
+		// handle an error
+		if (err) {
+			reject(err);
+			console.error('Error finding event ', eventKey, err);
 		} else {
-			template.events.forEach(eventKey => {
-				let url = 'https://www.thebluealliance.com/api/v3/event/' + eventKey + '/matches/simple';
-				callback(eventKey, url);
+			// else if it doesn't exist create a new blank event
+			if (!doc) doc = new events({});
+			// query TBA for the event
+			https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
+				let body = '';
+				// parse the response data
+				res.setEncoding('utf8');
+				res.on('data', data => {
+					body += data;
+				});
+				// when finished:
+				res.on('end', () => {
+					body = JSON.parse(body);
+					// set the event from the body
+					doc.setEvent(body);
+					// then get teams for the specified event
+					this.getTeams(eventKey).then(teams => {
+						// set the teams to the event
+						doc.setTeams(teams);
+						// save the event doc
+						doc.save().then(() => {
+							resolve();
+						}, e => {
+							console.error('Error saving event: ', eventKey, e);
+							reject(e);
+						});
+					}, e => {
+						console.error('error getting teams for event ' + eventKey, e);
+						reject(e);
+					});
+					
+				});
 			});
 		}
 	});
-};
+});
 
-module.exports.getTeams = function(event) {
-	return new Promise((resolve, reject) => {
-		if (!process.env.TBA_KEY) {
-			console.error('No TBA Key found!');
-			process.exit(1);
-		}
-		
-		const callback = (eventKey, url) => {
-			events.findOne({ key: eventKey }, (err, doc) => {
-				if (err) {
-					reject(err);
-					return console.error('ERROR: Error finding event ', eventKey, err);
-				} else {
-					if (!doc) {
-						reject('ERROR: No event doc stored!: ', eventKey);
-						return console.error('ERROR: No event doc stored!: ', eventKey);
-					}
-	
-					https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
-						let body = '';
-	
-						res.setEncoding('utf8');
-						res.on('data', data => {
-							body += data;
-						});
-						res.on('end', () => {
-							body = JSON.parse(body);
-							doc.setTeams(body);
-							doc.save(e => {
-								if (e) {
-									reject(e);
-									return console.error('ERROR: Error saving event ', eventKey, e);
-								}
-								resolve();
-							});
-						});
-					});
-				}
-			});
-		};
-	
-		if (event) {
-			let url = 'https://www.thebluealliance.com/api/v3/event/' + event + '/teams/simple';
-			callback(event, url);
-		} else {
-			template.events.forEach(eventKey => {
-				let url = 'https://www.thebluealliance.com/api/v3/event/' + eventKey + '/teams/simple';
-				callback(eventKey, url);
-			});
-		}
-	});
+/**
+ * Fetch and save all events specified in the template
+ * 
+ * (No error handling, just triggers the fetch)
+ */
+module.exports.getEvents = () => {
+	template.events.forEach(eventKey => this.getEvent(eventKey));
 };

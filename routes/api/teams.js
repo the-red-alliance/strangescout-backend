@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const router = require('express').Router();
 const auth = require('../../middlewares/auth');
-const teams = mongoose.model('pits');
+const teams = mongoose.model('teams');
 
 // /teams ---------------------------------------------------------------------
 

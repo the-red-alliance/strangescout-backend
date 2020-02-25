@@ -3,13 +3,18 @@ const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
 const createAdmin = require('./utils/admin');
 
+const template = require('./utils/template');
+
 const loadModels = () => {
 	require('./models/UserModel');
 	require('./models/InviteCodeModel');
-	require('./models/RunModel');
+	
 	require('./models/EventModel');
+	require('./models/MatchModel');
+	
+	require('./models/RunModel');
 	require('./models/ProcessedTeamModel');
-	require('./models/PitModel');
+	require('./models/TeamModel');
 };
 
 // run key checks before start
@@ -71,5 +76,10 @@ db.once('open', () => {
 	
 	// update all teams processing on launch
 	require('./utils/processTeam').updateAllTeams();
+	// fetch all events specified in the template
 	require('./utils/events').getEvents();
+	// fetch matches for all events specified
+	template.events.forEach(eventKey => {
+		require('./utils/matches').getMatches(eventKey);
+	});
 });
