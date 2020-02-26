@@ -51,4 +51,13 @@ router.get('/', auth.required, (req, res) => {
 	}
 });
 
+router.get('/ids', auth.required, (req, res) => {
+	teams.find((err, docs) => {
+		if (err) return res.status(500).send(err);
+
+		let ids = docs.map(item => item._id);
+		return res.status(200).json(ids);
+	});
+});
+
 module.exports = router;
