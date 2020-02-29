@@ -30,26 +30,47 @@ module.exports.getMatches = (eventKey) => new Promise((resolve, reject) => {
 				console.error('Error parsing matches for event ' + eventKey, e);
 				reject(e);
 			}
-			
+			let counter = 0;
+			let failed = false;
 			body.forEach(match => {
+				counter = counter + 1;
 				if (match.comp_level !== 'qm') return;
 				matches.findOne({ key: match.key }, (err, doc) => {
 					if (err) {
-						reject(err);
 						console.error('Error finding match ', match.key, err);
+						failed = true;
+						if (counter === body.length) {
+							console.error('failed sycing matches');
+							reject(err);
+						}
 					} else {
 						if (!doc) doc = new matches({});
 						doc.setMatch(match);
 						doc.save().then(() => {
 							this.getMatchMotionworks(match.event_key, match.match_number, match.key).then(() => {
-								resolve();
+								if (counter === body.length) {
+									if (failed) {
+										console.error('failed sycing matches');
+										reject();
+									} else {
+										resolve();
+									}
+								}
 							}, e => {
 								console.error('error getting motionworks: ', e);
-								reject(e);
+								failed = true
+								if (counter === body.length) {
+									console.error('failed sycing matches');
+									reject(err);
+								}
 							});
 						}, e => {
 							console.error('Error saving match: ', match.key, e);
-							reject(e);
+							failed = true;
+							if (counter === body.length) {
+								console.error('failed sycing matches');
+								reject(err);
+							}
 						});
 					}
 				});
@@ -152,8 +173,8 @@ module.exports.getMatchMotionworks = (event, match, matchKey) => new Promise((re
 		} else {
 			let headers = {
 				'X-TBA-Auth-Key': process.env.TBA_KEY,
-				'If-Modified-Since': (doc && doc.tbaLastModified) ? doc.tbaLastModified.toUTCString() : (new Date(0)).toUTCString()
 			};
+			if (doc && doc.tbaLastModified) headers['If-Modified-Since'] = doc.tbaLastModified.toUTCString();
 
 			let req = https.get(url, { headers: headers }, res => {
 				let body = '';
@@ -172,42 +193,44 @@ module.exports.getMatchMotionworks = (event, match, matchKey) => new Promise((re
 							console.error('Error parsing match ' + matchKey, e);
 							reject(e);
 						}
-						let teams = body.alliances.red.map(allianceTeam => parseInt(allianceTeam.team_key.substr(3)));
-						teams = teams.concat(body.alliances.blue.map(allianceTeam => parseInt(allianceTeam.team_key.substr(3))));
-						let counter = 0;
+						let counter = body.alliances.red.length + body.alliances.blue.length;
 						let failed = false;
 
-						teams.forEach(team => {
-							motionworks.findOne({ team: team, key: matchKey }, (err, motionDoc) => {
-								if (err) {
-									reject(err);
-									console.error('Error finding motionworks doc for team ' + team + ' on match key ', matchKey, err);
-								} else {
-									if (!motionDoc) motionDoc = new motionworks({});
-									motionDoc.key = matchKey;
-									motionDoc.team = team;
-									motionDoc.event = event;
-									motionDoc.match = match;
-									motionDoc.tbaLastModified = res.headers['last-modified'] ? res.headers['last-modified'] : new Date();
-									motionDoc.setPositions(team, body);
-									motionDoc.save().then(() => {
-										counter = counter + 1;
-										if (counter === teams.length) {
-											if (failed) {
-												reject();
-											} else {
-												resolve();
+						Object.keys(body.alliances).forEach(alliance => {
+							body.alliances[alliance].forEach(teamObj => {
+								const team = parseInt(teamObj.team_key.substr(3));
+								motionworks.findOne({ team: team, key: matchKey }, (err, motionDoc) => {
+									if (err) {
+										reject(err);
+										console.error('Error finding motionworks doc for team ' + team + ' on match key ', matchKey, err);
+									} else {
+										if (!motionDoc) motionDoc = new motionworks({});
+										motionDoc.key = matchKey;
+										motionDoc.team = team;
+										motionDoc.event = event;
+										motionDoc.match = match;
+										motionDoc.alliance = alliance;
+										motionDoc.tbaLastModified = res.headers['last-modified'] ? res.headers['last-modified'] : new Date();
+										motionDoc.setPositions(team, body);
+										motionDoc.save().then(() => {
+											counter = counter - 1;
+											if (counter === 0) {
+												if (failed) {
+													reject();
+												} else {
+													resolve();
+												}
 											}
-										}
-									}, e => {
-										console.error('Error saving motionworks: ', body.key, e);
-										counter = counter + 1;
-										failed = true;
-										if (counter === teams.length) {
-											reject(e);
-										}
-									});
-								}
+										}, e => {
+											console.error('Error saving motionworks: ', body.key, e);
+											counter = counter - 1;
+											failed = true;
+											if (counter === 0) {
+												reject(e);
+											}
+										});
+									}
+								});
 							});
 						});
 					} else {

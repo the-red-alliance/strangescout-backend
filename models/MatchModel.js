@@ -44,6 +44,9 @@ MatchSchema.methods.setMatch = function(tbaMatch, lastModified) {
 	tbaMatch.alliances.red.team_keys.forEach(teamKey => {
 		this.teams.push(parseInt(teamKey.substr(3)));
 	});
+	tbaMatch.alliances.blue.team_keys.forEach(teamKey => {
+		this.teams.push(parseInt(teamKey.substr(3)));
+	});
 
 	if (lastModified) this.lastModified = lastModified;
 

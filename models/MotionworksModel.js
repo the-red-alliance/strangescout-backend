@@ -6,6 +6,7 @@ const MotionworksSchema = new Schema({
 	event: { type: String, required: true },
 	team: { type: Number, required: true },
 	match: { type: Number, required: true },
+	alliance: { type: String, required: true },
 	positions: { type: [], required: true, default: [] },
 	tbaLastModified: { type: Date, required: true },
 	updated: { type: Date, required: true }
