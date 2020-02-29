@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const router = require('express').Router();
 const auth = require('../../middlewares/auth');
-const processedTeams = mongoose.model('processedTeams');
+const motionworks = mongoose.model('motionworks');
 
 router.get('/', auth.required, (req, res) => {
 	// empty updated date var
@@ -28,10 +28,10 @@ router.get('/', auth.required, (req, res) => {
 	// if an undated date is given
 	if (updatedDate) {
 		// return teams docs updated after the given date
-		return processedTeams.find({ updated: { $gt: updatedDate } }, callback);
+		return motionworks.find({ updated: { $gt: updatedDate } }, callback);
 	} else {
 		// else return all docs
-		return processedTeams.find(callback);
+		return motionworks.find(callback);
 	}
 });
 
@@ -39,7 +39,7 @@ router.get('/', auth.required, (req, res) => {
 
 router.get('/ids', auth.required, (req, res) => {
 	// find all docs
-	processedTeams.find((err, docs) => {
+	motionworks.find((err, docs) => {
 		if (err) return res.status(500).send(err);
 
 		// map all the docs ids to an array and return it

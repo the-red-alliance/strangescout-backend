@@ -15,10 +15,11 @@ const MatchSchema = new Schema({
 	predictedTime: { type: Date },
 	actualTime: { type: Date },
 
+	tbaLastModified: { type: Date },
 	updated: { type: Date, required: true }
 });
 
-MatchSchema.methods.setMatch = function(tbaMatch) {
+MatchSchema.methods.setMatch = function(tbaMatch, lastModified) {
 	this.event = tbaMatch.event_key;
 	this.key = tbaMatch.key;
 	this.match = tbaMatch.match_number;
@@ -43,6 +44,8 @@ MatchSchema.methods.setMatch = function(tbaMatch) {
 	tbaMatch.alliances.red.team_keys.forEach(teamKey => {
 		this.teams.push(parseInt(teamKey.substr(3)));
 	});
+
+	if (lastModified) this.lastModified = lastModified;
 
 	this.updated = Date.now();
 };

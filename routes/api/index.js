@@ -14,5 +14,8 @@ router.use('/webhook', require('./tbaWebhook'));
 router.use('/events', require('./events'));
 router.use('/teams', require('./teams'));
 router.use('/matches', require('./matches'));
+router.use('/motionworks', require('./motionworks'));
+
+router.use('/field', express.static(process.env.FIELDIMG));
 
 module.exports = router;

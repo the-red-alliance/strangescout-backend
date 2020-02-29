@@ -17,7 +17,7 @@ module.exports.getTeams = (eventKey) => new Promise((resolve, reject) => {
 
 	let url = 'https://www.thebluealliance.com/api/v3/event/' + eventKey + '/teams/simple';
 
-	https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
+	let req = https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
 		let body = '';
 
 		res.setEncoding('utf8');
@@ -34,6 +34,17 @@ module.exports.getTeams = (eventKey) => new Promise((resolve, reject) => {
 				reject(e);
 			}
 		});
+	});
+	req.on('error', e => {
+		console.error('error getting teams for event ' + eventKey, e);
+	});
+	req.on('timeout', e => {
+		console.error('error getting teams for event ' + eventKey, e);
+		req.abort();
+	});
+	req.on('uncaughtException', e => {
+		console.error('error getting teams for event ' + eventKey, e);
+		req.abort();
 	});
 });
 
@@ -60,7 +71,7 @@ module.exports.getEvent = (eventKey) => new Promise((resolve, reject) => {
 			// else if it doesn't exist create a new blank event
 			if (!doc) doc = new events({});
 			// query TBA for the event
-			https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
+			let req = https.get(url, { headers: { 'X-TBA-Auth-Key': process.env.TBA_KEY } }, res => {
 				let body = '';
 				// parse the response data
 				res.setEncoding('utf8');
@@ -89,6 +100,17 @@ module.exports.getEvent = (eventKey) => new Promise((resolve, reject) => {
 					});
 					
 				});
+			});
+			req.on('error', e => {
+				console.error('error getting event ' + eventKey, e);
+			});
+			req.on('timeout', e => {
+				console.error('error getting event ' + eventKey, e);
+				req.abort();
+			});
+			req.on('uncaughtException', e => {
+				console.error('error getting event ' + eventKey, e);
+				req.abort();
 			});
 		}
 	});

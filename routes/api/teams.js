@@ -31,7 +31,7 @@ router.put('/:teamNum', auth.required, (req, res) => {
 
 router.get('/', auth.required, (req, res) => {
 	let updatedDate;
-	const updated = req.params.updated;
+	const updated = req.query.updated;
 	if (updated) updatedDate = new Date(JSON.parse(updated));
 
 	const callback = (err, docs) => {

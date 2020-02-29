@@ -11,6 +11,7 @@ const loadModels = () => {
 	
 	require('./models/EventModel');
 	require('./models/MatchModel');
+	require('./models/MotionworksModel');
 	
 	require('./models/RunModel');
 	require('./models/ProcessedTeamModel');
@@ -67,7 +68,7 @@ db.once('open', () => {
 	app.use(require('./routes'));
 
 	// route / to static frontend files
-	app.use('/', express.static(process.env.STATIC))
+	app.use('/', express.static(process.env.STATIC));
 
 	// listen on the specified port
 	app.listen(process.env.PORT, () => {
@@ -80,6 +81,10 @@ db.once('open', () => {
 	require('./utils/events').getEvents();
 	// fetch matches for all events specified
 	template.events.forEach(eventKey => {
-		require('./utils/matches').getMatches(eventKey);
+		require('./utils/matches').getMatches(eventKey).then(() => {
+			console.log('Updated matches for ' + template.events.length + ' event(s)');
+		}, e => {
+			console.error('error updating matches for event ' + eventKey, e);
+		});
 	});
 });
