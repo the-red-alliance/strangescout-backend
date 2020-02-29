@@ -4,6 +4,8 @@ const router = require('express').Router();
 const eventsUtils = require('../../utils/events');
 const matchesUtils = require('../../utils/matches');
 
+const verifyHMAC = require('../../utils/verifyHMAC');
+
 router.get('/', (req, res) => {
 	console.log('Webhook GET: ', { headers: req.headers, body: req.body });
 	return res.send(200);
@@ -11,8 +13,8 @@ router.get('/', (req, res) => {
 
 router.post('/', (req, res) => {
 	console.log('Webhook POST: ', { headers: req.headers, body: req.body });
-	if (!req.header('X-TBA-HMAC') || !process.env.TBA_HMAC) return res.send(200);
-	if (req.header('X-TBA-HMAC') !== process.env.TBA_HMAC) return res.send(401);
+	if (!req.header('X-TBA-HMAC') || !process.env.TBA_HMAC) return res.sendStatus(200);
+	if (!verifyHMAC(process.env.HOOK_SECRET, req.body, req.header('X-TBA-HMAC'))) return res.sendStatus(401);
 
 	console.log('Hook authorized!');
 
