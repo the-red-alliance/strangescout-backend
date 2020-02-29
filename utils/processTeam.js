@@ -223,8 +223,10 @@ module.exports.updateTeam = (team) => {
 						// empty indexes array for tracking
 						let indexes = [];
 
-						if (filteredTotalJournal[filteredTotalJournal.length - 1].event === gameElement.startKey){
-							filteredTotalJournal.push({event: gameElement.endKey, time: template.gameInfo.duration});
+						if (filteredTotalJournal.length > 0) {
+							if (filteredTotalJournal[filteredTotalJournal.length - 1].event === gameElement.startKey) {
+								filteredTotalJournal.push({event: gameElement.endKey, time: template.gameInfo.duration});
+							}
 						}
 
 						// for each journal event
