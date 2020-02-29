@@ -21,7 +21,7 @@ router.post('/', (req, res) => {
 		eventsUtils.getMatches(req.body.message_data.event_key);
 		break;
 	case 'match_score':
-		matchesUtils.getMatch(req.body.message_data.match.match_key);
+		matchesUtils.getMatch(req.body.message_data.match.key);
 		break;
 	default:
 		return;
