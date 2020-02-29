@@ -67,6 +67,11 @@ module.exports.updateTeam = (team) => {
 						multi_item_average_children_duration: true,
 					};
 
+					if (gameElement.type === 'duration') processTypes = {
+						...processTypes,
+						duration_total_duration: true,
+					};
+
 					// take the average count per match for each child of the specified top level event
 					if (processTypes.average_children) {
 						// for each child of the top level event
@@ -205,6 +210,50 @@ module.exports.updateTeam = (team) => {
 							Object.keys(counters).forEach(counterKey => {
 								if (counters[counterKey].total > 0) dataObj[gameElement.key][counterKey].average_duration = counters[counterKey].elapsed / counters[counterKey].total;
 							});
+						}
+					}
+
+					// take the total duration over an event
+					if (processTypes.duration_total_duration) {
+						// filter down the total journal to the start and end keys
+						// ensures we don't get tripped up by "misplaced" events
+						const possibleKeys = [ gameElement.startKey, gameElement.endKey ];
+						let filteredTotalJournal = totalJournal.filter(journalItem => (possibleKeys.includes(journalItem.event)));
+
+						// empty indexes array for tracking
+						let indexes = [];
+
+						if (filteredTotalJournal[filteredTotalJournal.length - 1].event === gameElement.startKey){
+							filteredTotalJournal.push({event: gameElement.endKey, time: template.gameInfo.duration});
+						}
+
+						// for each journal event
+						filteredTotalJournal.forEach((value, index) => {
+							// if the journal event matches the current child we're tracking
+							if (value.event === gameElement.endKey) {
+								// push it's index to our indexes array
+								indexes.push(index);
+							}
+						});
+
+						// initialize total time counter
+						let totalTime = 0;
+
+						// for each tracked index (each occurrence)
+						indexes.forEach(indexValue => {
+							// the difference in timestamp between our tracked child and the event before it (the start/get event)
+							// is added to the total time counter
+							totalTime = totalTime + ( filteredTotalJournal[indexValue].time - filteredTotalJournal[indexValue-1].time );
+						});
+
+						// if the journal isn't empty
+						// (meaning the child event has occurred)
+						if (indexes.length > 0) {
+							// initialize the nested objects if they don't exist yet
+							// dataObj.<topEventKey>.<childEventKey> = {}
+							if (!dataObj[gameElement.key]) dataObj[gameElement.key] = {};
+							// set to the average duration per match
+							dataObj[gameElement.key].average_total_duration = totalTime / runDocs.length;
 						}
 					}
 				});
