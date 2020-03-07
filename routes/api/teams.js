@@ -5,12 +5,12 @@ const teams = mongoose.model('teams');
 
 // /teams ---------------------------------------------------------------------
 
-//put code route
-router.put('/:teamNum', auth.required, (req, res) => {
+// post team route
+router.post('/', auth.required, (req, res) => {
 	// load doc from body
 	let newTeam = { ...req.body };
 
-	teams.findOne({team: req.params.teamNum, event: newTeam.event}, (err, doc) => {
+	teams.findOne({team: newTeam.team, event: newTeam.event}, (err, doc) => {
 		const callback = (err, doc) => {
 			if (err) return res.status(500).send(err);
 			return res.status(200).json(doc);
