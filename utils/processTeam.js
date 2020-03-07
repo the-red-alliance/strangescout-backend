@@ -18,7 +18,7 @@ module.exports.updateTeam = (team) => {
 		
 
 		// find all runs for the specified team
-		runs.find({team: team}, null, {sort: {match: 1}}, (runsError, runDocs) => {
+		runs.find({ team: team, ignore: false }, null, {sort: {match: 1}}, (runsError, runDocs) => {
 			// fail if there was an error finding runs for the team
 			if (runsError) {
 				reject(runsError);

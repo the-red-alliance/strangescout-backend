@@ -15,6 +15,7 @@ const RunSchema = new Schema({
 	journal: { type: [JournalEntrySchema], required: true },
 	notes: { type: String },
 	scouter: { type: String, index: true },
+	ignore: { type: Boolean, index: true, default: false },
 	updated: { type: Date, required: true }
 });
 

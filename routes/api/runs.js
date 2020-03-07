@@ -23,15 +23,20 @@ router.post('/', auth.required, (req, res) => {
 	if (typeof newRun.match !== 'number') return res.status(422).send('`match` must be a number');
 	if (!Array.isArray(newRun.journal)) return res.status(422).send('`journal` must be an array');
 
-	const finalRun = new runs(newRun);
-	finalRun.setUpdated();
-	
-	finalRun.save(null, (err, doc) => {
-		if (err) return res.status(500).send(err);
-		
-		processTeam.updateTeam(doc.team);
+	runs.findOne({ event: newRun.event, team: newRun.team, match: newRun.match }, (e, existingRun) => {
+		if (e) return res.status(500).send(e);
 
-		return res.status(202).send();
+		const finalRun = new runs(newRun);
+		if (existingRun) finalRun.ignore = true;
+		finalRun.setUpdated();
+		
+		finalRun.save(null, (err, doc) => {
+			if (err) return res.status(500).send(err);
+
+			processTeam.updateTeam(doc.event, doc.team);
+
+			return res.status(202).send();
+		});
 	});
 });
 
